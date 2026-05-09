@@ -20,7 +20,7 @@ from langchain_groq import ChatGroq
 from langgraph.graph import StateGraph, END
 from pydantic import BaseModel, Field
 from typing import Optional
-from phase2.tools import mock_searxng_search
+from tools import mock_searxng_search
 
 # Helper to produce a message object compatible with the LLM's `invoke` API.
 # Prefer the real `SystemMessage` from langchain when available; otherwise

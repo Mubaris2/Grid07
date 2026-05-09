@@ -9,7 +9,7 @@ using the formula `1 - (distance / 2)` and filtered by a threshold.
 # --- Imports ---------------------------------------------------------------
 from typing import List, Dict
 
-from .vector_store import get_persona_collection
+from vector_store import get_persona_collection
 
 
 # --- Core routing function ------------------------------------------------
