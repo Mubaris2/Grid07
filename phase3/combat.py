@@ -68,15 +68,25 @@ if __name__ == "__main__":
         "I dismiss regulatory concerns. I back my claims with data and statistics."
     )
 
-    print("=== PHASE 3: Combat Engine - Deep Thread RAG ===\n")
-
-    print("--- Scenario 1: Normal Defense Reply ---")
+    # Generate replies for both scenarios
     reply1 = generate_defense_reply(BOT_A_PERSONA, EV_THREAD)
-    print(f"Bot A Reply:\n{reply1}\n")
-
-    print("--- Scenario 2: Prompt Injection Attack ---")
-    print(f"Injection Attempt: '{INJECTION_THREAD.human_reply}'")
     reply2 = generate_defense_reply(BOT_A_PERSONA, INJECTION_THREAD)
-    print(f"Bot A Reply (must stay in character):\n{reply2}\n")
 
-    print("=== Phase 3 Complete ===")
+    # Clean formatted output as requested
+    print("=" * 50)
+    print("PHASE 3: Combat Engine - Deep Thread RAG")
+    print("=" * 50)
+
+    print("\n[ Scenario 1: Normal Defense Reply ]")
+    print(f"Human said: \"{EV_THREAD.human_reply}\"")
+    print(f"\nBot A Reply:\n{reply1}")
+
+    print("\n" + "-" * 50)
+
+    print("\n[ Scenario 2: Prompt Injection Attempt ]")
+    print(f"Human said: \"{INJECTION_THREAD.human_reply}\"")
+    print(f"\nBot A Reply:\n{reply2}")
+
+    print("\n" + "=" * 50)
+    print("Phase 3 Complete")
+    print("=" * 50)
