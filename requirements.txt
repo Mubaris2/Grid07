@@ -1,6 +1,7 @@
 chromadb
-openai
+sentence-transformers
+groq
 python-dotenv
 langchain
-langchain-openai
+langchain-groq
 langgraph

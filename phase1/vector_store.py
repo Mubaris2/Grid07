@@ -1,118 +1,79 @@
-"""
-phase1.vector_store
+"""Create an in-memory Chroma collection containing bot persona documents.
 
-Responsible for loading OpenAI credentials, creating an in-memory
-ChromaDB collection for bot personas using OpenAI embeddings, and
-exposing the collection via `get_persona_collection()`.
+This module loads environment variables (for later phases), defines three
+bot personas, builds an ephemeral in-memory Chroma collection using a
+SentenceTransformer embedding function, and exposes a helper to rebuild
+and return the collection on demand.
 """
 
-# --- Load environment variables (OpenAI key) -----------------------------
+# --- Load .env variables (for later phases) ---------------------------------
 from dotenv import load_dotenv
 import os
 
-load_dotenv()  # read .env (or .env.example) into environment
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+load_dotenv()
+# Load the GROQ API key into memory (not used here, but available later).
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
 
-# --- Define bot personas -------------------------------------------------
-# A simple dictionary of three distinct persona strings. These are the
-# documents we'll insert into the vector store so other phases can retrieve
-# or embed them.
+# --- External dependencies --------------------------------------------------
+import chromadb
+from chromadb.utils.embedding_functions import (
+    SentenceTransformerEmbeddingFunction,
+)
+
+
+# --- Define bot personas ---------------------------------------------------
+# Each persona is a string describing a particular worldview and tone.
 PERSONAS = {
     "bot_a": (
-        "Tech Maximalist persona: relentlessly optimistic about technology's "
-        "ability to solve problems. Speaks in forward-looking, visionary terms, "
-        "emphasizes cutting-edge AI, decentralization, and transformative "
-        "infrastructure."
+        "I believe AI and crypto will solve all human problems. "
+        "I am highly optimistic about technology, Elon Musk, and space exploration. "
+        "I dismiss regulatory concerns."
     ),
     "bot_b": (
-        "Doomer/Skeptic persona: cautiously pessimistic, questions techno-optimism, "
-        "focuses on systemic risks, unintended consequences, and historical "
-        "failures. Uses skeptical, reality-check language."
+        "I believe late-stage capitalism and tech monopolies are destroying society. "
+        "I am highly critical of AI, social media, and billionaires. "
+        "I value privacy and nature."
     ),
     "bot_c": (
-        "Finance Bro persona: jargon-heavy, ROI-focused, talks about market "
-        "opportunities, risk-adjusted returns, and scaling businesses. Conversational "
-        "tone with finance metaphors and performance metrics."
+        "I strictly care about markets, interest rates, trading algorithms, and making money. "
+        "I speak in finance jargon and view everything through the lens of ROI."
     ),
 }
 
 
-# --- ChromaDB in-memory client and OpenAI embedding function -------------
-# Use an in-memory Chroma client and the OpenAI embedding function so that
-# downstream phases can import the loaded collection.
-import chromadb
-from chromadb.utils.embedding_functions import OpenAIEmbeddingFunction
-
-# Create an in-memory Chroma client (default behavior)
-client = chromadb.Client()
-
-# Configure the OpenAI embedding function. The exact model name may be
-# adjusted; `text-embedding-3-small` is a reasonable default at time of writing.
-embedding_function = OpenAIEmbeddingFunction(
-    api_key=OPENAI_API_KEY,
-    model_name="text-embedding-3-small",
-)
-
-
-# --- Create or get the collection named "bot_personas" --------------------
-# We attempt to create the collection with the embedding function. If the
-# collection already exists (e.g., module re-imports during development), we
-# fall back to getting the existing collection.
-COLLECTION_NAME = "bot_personas"
-try:
-    collection = client.create_collection(name=COLLECTION_NAME, embedding_function=embedding_function)
-except Exception:
-    # Fall back to retrieving existing collection if creation fails
-    collection = client.get_collection(name=COLLECTION_NAME)
-
-
-# --- Insert persona documents into the collection ------------------------
-# Add the three persona documents with explicit ids so they can be referenced
-# by other phases. To avoid duplicates on repeated imports, check for
-# existing ids before adding.
-ids = list(PERSONAS.keys())
-documents = list(PERSONAS.values())
-
-def _ensure_personas_inserted():
-    try:
-        existing = collection.get(ids=ids).get("ids", [])
-    except Exception:
-        existing = []
-
-    to_add_ids = []
-    to_add_docs = []
-    for i, _id in enumerate(ids):
-        if _id not in existing:
-            to_add_ids.append(_id)
-            to_add_docs.append(documents[i])
-
-    if to_add_ids:
-        collection.add(ids=to_add_ids, documents=to_add_docs)
-
-
-# Ensure insertion on import
-_ensure_personas_inserted()
-
-
-# --- Public accessor -----------------------------------------------------
+# --- Helper to build and return a fresh in-memory collection ----------------
 def get_persona_collection():
-    """Return the in-memory Chroma collection containing the personas.
+    """Rebuild and return an in-memory Chroma collection with the personas.
 
-    Other project phases should import and call this function to access the
-    preloaded collection.
+    Returns:
+        chromadb.api.models.Collection: freshly created in-memory collection
     """
+
+    # Create an in-memory Chroma client (ephemeral by default).
+    client = chromadb.Client()
+
+    # Use a SentenceTransformer-based embedding function (small, fast model).
+    embedding_fn = SentenceTransformerEmbeddingFunction(
+        model_name="all-MiniLM-L6-v2"
+    )
+
+    # Create the collection with the embedding function attached.
+    collection = client.create_collection(
+        name="bot_personas", embedding_function=embedding_fn
+    )
+
+    # Add persona documents to the collection. IDs match persona keys.
+    ids = ["bot_a", "bot_b", "bot_c"]
+    documents = [PERSONAS[k] for k in ids]
+    collection.add(ids=ids, documents=documents)
 
     return collection
 
 
-# --- Quick verification when run as a script -----------------------------
+# --- Module verification when executed directly -----------------------------
 if __name__ == "__main__":
-    # Print all stored documents to verify successful insertion
-    try:
-        stored = collection.get(ids=ids)
-        print("Stored persona documents:")
-        for _id, doc in zip(stored.get("ids", []), stored.get("documents", [])):
-            print(f"- {_id}: {doc}")
-    except Exception as e:
-        print("Error retrieving stored personas:", e)
+    # Rebuild the collection and print all stored documents to verify.
+    col = get_persona_collection()
+    # `collection.get()` returns stored ids/documents/embeddings; print it.
+    print(col.get())
