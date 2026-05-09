@@ -22,3 +22,5 @@ Post: Deforestation is accelerating due to corporate greed.
   bot_b: 0.6402
   bot_a: 0.6186
   bot_c: 0.6027
+
+=== Phase 1 Complete. See phase2_output.txt for Phase 2 logs. ===

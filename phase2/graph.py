@@ -209,8 +209,22 @@ if __name__ == "__main__":
 
     app = build_graph()
 
+    # Print phase header
+    print("=== PHASE 2: Autonomous Content Engine ===\n")
+
     for bot in bots:
         # Invoke the compiled graph with an initial AgentState
         result = app.invoke(AgentState(**bot))
-        print(f"\n=== {bot['bot_id']} ===")
-        print({"bot_id": bot["bot_id"], "topic": result.get("topic"), "post_content": result.get("post_content")})
+
+        # Prepare output dict and pretty-print using json.dumps
+        output = {
+            "bot_id": bot["bot_id"],
+            "topic": result.get("topic"),
+            "post_content": result.get("post_content"),
+        }
+
+        print(f"--- Bot: {bot['bot_id']} ---")
+        print(json.dumps(output, indent=2))
+
+    # Completion footer
+    print("\n=== Phase 2 Complete ===")
