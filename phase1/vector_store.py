@@ -58,10 +58,24 @@ def get_persona_collection():
         model_name="all-MiniLM-L6-v2"
     )
 
-    # Create the collection with the embedding function attached.
-    collection = client.create_collection(
-        name="bot_personas", embedding_function=embedding_fn
-    )
+    # Create the collection with the embedding function attached. If a
+    # collection with the same name already exists (e.g. persistent backend),
+    # remove it and recreate to ensure a fresh in-memory collection.
+    try:
+        collection = client.create_collection(
+            name="bot_personas", embedding_function=embedding_fn
+        )
+    except chromadb.errors.InternalError:
+        # Delete existing collection and recreate it to avoid "already exists" errors.
+        try:
+            client.delete_collection("bot_personas")
+        except Exception:
+            # If deletion fails for any reason, attempt to get the existing collection.
+            collection = client.get_collection("bot_personas")
+        else:
+            collection = client.create_collection(
+                name="bot_personas", embedding_function=embedding_fn
+            )
 
     # Add persona documents to the collection. IDs match persona keys.
     ids = ["bot_a", "bot_b", "bot_c"]
